@@ -2,8 +2,6 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 import pandas as pd
 import seaborn as sns
-import plotly.graph_objs as go
-from plotly.subplots import make_subplots
 from PIL import Image
 import timeit
 import io
