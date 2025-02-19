@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 import pandas as pd
+import plotly.graph_objs as go
 from PIL import Image
 import timeit
 import io
@@ -8,7 +9,9 @@ from io import BytesIO
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 
-
+# Inicializa n_clusters no session_state
+if 'n_clusters' not in st.session_state:
+    st.session_state.n_clusters = 3
 
 # FUNÇÕES 
 @st.cache_data
@@ -290,10 +293,9 @@ if selected == 'Análise RFV':
     st.write('Quantidade de clientes por tipo de ação')
     st.write(df_RFV['acoes de marketing/crm'].value_counts(dropna=False))
 
-
     st.markdown("### RFV com Cluster")
     n_clusters_slider = st.slider("Número de clusters para K-Means", 2, 5, st.session_state.n_clusters)
-    st.session_state.n_clusters = n_clusters_slider
+    st.session_state.n_clusters = n_clusters_slider # Salva o valor atualizado
 
     df_rfv = calcular_rfv(df_compras)
     df_rfv_segmentado = segmentar_rfv(df_rfv)
