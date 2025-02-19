@@ -293,7 +293,7 @@ if selected == 'Análise RFV':
     st.write(df_RFV['acoes de marketing/crm'].value_counts(dropna=False))
 
     st.markdown("### RFV com Cluster")
-    n_clusters_slider = st.slider("Número de clusters para K-Means", 0, 5, st.session_state.n_clusters)
+    n_clusters_slider = st.slider("Número de clusters para K-Means", 1, 5, st.session_state.n_clusters)
     st.session_state.n_clusters = n_clusters_slider # Salva o valor atualizado
 
     df_rfv = calcular_rfv(df_compras)
