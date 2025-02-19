@@ -8,8 +8,7 @@ from PIL import Image
 import timeit
 import io
 from io import BytesIO
-from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import KMeans
+
 
 
 
@@ -37,104 +36,15 @@ def recencia_class(x, r, q_dict):
     else:
         return 'D'
 
-
-
 def freq_val_class(x, fv, q_dict):
     if x <= q_dict[fv][0.25]:
-
         return 'D'
-
     elif x <= q_dict[fv][0.50]:
-
         return 'C'
-
     elif x <= q_dict[fv][0.75]:
-
         return 'B'
-
     else:
         return 'A'
-
-
-
-
-
-
-
-# FUNÇÕES RFV (adaptadas do código anterior)
-
-def calcular_rfv(df):
-
-    # Calcular Recência
-
-    df_recencia = df.groupby('ID_cliente')['DiaCompra'].max().reset_index()
-    df_recencia['Recencia'] = (pd.to_datetime('today') - df_recencia['DiaCompra']).dt.days
-
-
-
-    # Calcular Frequência
-
-    df_frequencia = df[['ID_cliente', 'CodigoCompra']].groupby('ID_cliente').count().reset_index()
-    df_frequencia.rename(columns={'CodigoCompra': 'Frequencia'}, inplace=True)
-
-
-
-    # Calcular Valor
-
-    df_valor = df[['ID_cliente', 'ValorTotal']].groupby('ID_cliente').sum().reset_index()
-    df_valor.rename(columns={'ValorTotal': 'Valor'}, inplace=True)
-
-
-
-    # Merge dataframes
-
-    df_rfv = pd.merge(df_recencia, df_frequencia, on='ID_cliente')
-
-    df_rfv = pd.merge(df_rfv, df_valor, on='ID_cliente')
-    return df_rfv
-
-
-
-def segmentar_rfv(df_rfv):
-
-    quartis = df_rfv[['Recencia', 'Frequencia', 'Valor']].quantile(q=[0.25, 0.5, 0.75])
-
-    df_rfv['R_quartil'] = df_rfv['Recencia'].apply(recencia_class, args=('Recencia', quartis))
-
-    df_rfv['F_quartil'] = df_rfv['Frequencia'].apply(freq_val_class, args=('Frequencia', quartis))
-
-    df_rfv['V_quartil'] = df_rfv['Valor'].apply(freq_val_class, args=('Valor', quartis))
-
-    df_rfv['RFV_Score'] = df_rfv[['R_quartil', 'F_quartil', 'V_quartil']].sum(axis=1) # Soma os valores dos quartis
-    return df_rfv
-
-
-
-def aplicar_kmeans(df_rfv, n_clusters):
-
-    scaler = StandardScaler()
-    rfv_scaled = scaler.fit_transform(df_rfv[['Recencia', 'Frequencia', 'Valor']])
-    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=5) # n_init adicionado
-    df_rfv['cluster'] = kmeans.fit_predict(rfv_scaled)
-    return df_rfv
-
-
-def filtrar_e_contar_clusters(df, n_cluster_max):
-    """Filtra e exibe dados e contagem para clusters de 0 a n_cluster_max."""
-
-    clusters_a_considerar = list(range(n_cluster_max + 1))  # Lista de clusters de 0 a n_cluster_max
-
-    df_filtrado = df[df['cluster'].isin(clusters_a_considerar)].copy()
-    contagem = df_filtrado.groupby('cluster').size().reset_index(name='count')
-
-    st.write(f"## Dados dos Clusters 0 a {n_cluster_max}")
-    st.dataframe(df_filtrado)
-
-    st.write(f"## Contagem de Clientes nos Clusters 0 a {n_cluster_max}")
-    st.dataframe(contagem)
-
-    return df_filtrado, contagem
-
 
 
 # CONFIGURAÇÕES DA PÁGINA 
@@ -237,7 +147,6 @@ if selected == 'Valor (V)':
     st.session_state.df_valor = df_valor
     st.write(df_valor.head(10))
 
-
 if selected == 'Análise RFV':
     st.markdown("<h1 style='font-size: 2em;'>Segmentação utilizando o RFV</h1>", unsafe_allow_html=True)
     st.write("""
@@ -290,28 +199,12 @@ if selected == 'Análise RFV':
     df_RFV['acoes de marketing/crm'] = df_RFV['RFV_Score'].map(dict_acoes)
     st.write(df_RFV.head())
 
-    st.write('Quantidade de clientes por tipo de ação')
-    st.write(df_RFV['acoes de marketing/crm'].value_counts(dropna=False))
 
-
-    st.markdown("### RFV com Cluster")
-    n_clusters_slider = st.slider("Número de clusters para K-Means", 2, 5, st.session_state.n_clusters)
-    st.session_state.n_clusters = n_clusters_slider
-
-    df_rfv = calcular_rfv(df_compras)
-    df_rfv_segmentado = segmentar_rfv(df_rfv)
-
-    # Aplica o KMeans com o número de clusters DEFINIDO no slider
-    df_rfv_cluster = aplicar_kmeans(df_rfv_segmentado.copy(), n_clusters_slider)
-    st.session_state.df_rfv_cluster = df_rfv_cluster
-
-    # Filtrar e exibir dados dos clusters de 0 ao valor selecionado no slider
-    df_cluster_filtrado, contagem_cluster = filtrar_e_contar_clusters(df_rfv_cluster, n_clusters_slider)
-
-    
     # df_RFV.to_excel('./auxiliar/output/RFV_.xlsx')
     df_xlsx = to_excel(df_RFV)
     st.download_button(label='📥 Download',
                             data=df_xlsx ,
                             file_name= 'RFV_.xlsx')
 
+    st.write('Quantidade de clientes por tipo de ação')
+    st.write(df_RFV['acoes de marketing/crm'].value_counts(dropna=False))
